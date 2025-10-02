@@ -5,7 +5,7 @@ import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 import random
 
-# Dataset inventado de interpretaciones libres
+# --- Diccionarios de creatividad ---
 creative_drawings = [
     "un gatito curioso 🐱",
     "una nube esponjosa ☁️",
@@ -19,29 +19,38 @@ creative_drawings = [
     "una carita feliz 🙂",
 ]
 
-# Datos curiosos por dígito
 fun_facts = {
     0: "El 0 fue inventado en la India y revolucionó las matemáticas. ¡Imagínate un mundo sin ceros!",
     1: "El número 1 es el único número que no se considera ni primo ni compuesto.",
     2: "El 2 es el único número par que además es primo.",
-    3: "El 3 es considerado un número de la suerte en muchas culturas.",
-    4: "El 4 es el número de las estaciones del año.",
-    5: "El 5 aparece en la naturaleza todo el tiempo: estrellas de mar, flores, dedos.",
-    6: "El 6 es considerado el número perfecto más pequeño.",
-    7: "El 7 aparece en las maravillas del mundo y en los días de la semana.",
-    8: "El 8 se asocia con la prosperidad en la cultura china.",
-    9: "El 9 es el último número antes de que empiece una nueva decena."
+    3: "El 3 es considerado un número mágico y creativo en muchas culturas.",
+    4: "El 4 simboliza estabilidad: las 4 estaciones, los 4 puntos cardinales.",
+    5: "El 5 aparece en la naturaleza: flores, estrellas de mar, y en nuestros dedos.",
+    6: "El 6 es un número perfecto porque sus divisores suman 6.",
+    7: "El 7 es el número de la suerte, presente en mitos y leyendas.",
+    8: "El 8 se asocia con la prosperidad y tiene simetría perfecta.",
+    9: "El 9 simboliza cierre de ciclos y la antesala de algo nuevo."
 }
 
-# Preprocesamiento SIN cv2
+oracles = [
+    "✨ El oráculo dice: hoy es un buen día para intentar algo nuevo.",
+    "🌌 Tu dibujo revela que pronto tendrás una sorpresa inesperada.",
+    "🔥 Veo pasión en tu trazo, sigue tu intuición.",
+    "💧 Hoy fluye como el agua, no te preocupes por lo que no controlas.",
+    "🍀 Tu dibujo trae buena suerte, aprovéchala.",
+    "🌙 El oráculo susurra que descanses más, lo necesitas.",
+    "🌟 Hay creatividad en ti esperando salir, no la escondas.",
+]
+
+# --- Preprocesamiento sin cv2 ---
 def preprocess_image(image):
-    img = image.convert("L")  # Escala de grises
-    img = ImageOps.invert(img)  # Invertir (para que sea blanco sobre negro)
-    img = img.resize((28,28))  # Redimensionar
+    img = image.convert("L")  # escala de grises
+    img = ImageOps.invert(img)  # invertir
+    img = img.resize((28,28))  # redimensionar
     img = np.array(img).astype("float32") / 255.0
     return img.reshape(1,28,28,1)
 
-# Predicción
+# --- Predicción ---
 def predictDigit(image):
     model = tf.keras.models.load_model("model/handwritten.h5")
     img = preprocess_image(image)
@@ -50,9 +59,11 @@ def predictDigit(image):
     confidence = np.max(pred[0])
     return result, confidence
 
-# Streamlit UI
-st.set_page_config(page_title='Oráculo de Dibujos ✨', layout='wide')
-st.title('🎨 Oráculo de Dibujos: ¿Qué ve la máquina en tu trazo?')
+# --- Streamlit ---
+st.set_page_config(page_title='Oráculo Creativo 🎨🔮', layout='wide')
+st.title('🎨 Oráculo Creativo: descubre qué significa tu dibujo')
+
+st.write("👉 Dibuja un número o cualquier cosa, y el oráculo te dirá lo que ve.")
 
 stroke_width = st.slider('Selecciona el ancho de línea', 1, 30, 15)
 stroke_color = '#FFFFFF'
@@ -75,16 +86,26 @@ if st.button('✨ Revelar'):
 
         res, conf = predictDigit(input_image)
 
-        # Mostrar resultado como dígito si está seguro
+        # Si el modelo está seguro del número
         if conf > 0.70:
-            st.header(f'🔢 Parece un **{res}** con {conf*100:.1f}% de confianza')
+            st.success(f"🔢 El oráculo ve el número **{res}** (confianza: {conf*100:.1f}%)")
             st.write("📖 Dato curioso:", fun_facts[res])
         else:
-            st.header("🤔 No estoy seguro que sea un número...")
-        
-        # Siempre muestra interpretación libre
-        st.subheader("🎨 Interpretación creativa:")
+            st.warning("🤔 El oráculo no está seguro que sea un número...")
+
+        # Siempre: interpretación creativa
+        st.subheader("🎨 Interpretación artística")
         st.write(f"Esto podría ser {random.choice(creative_drawings)}")
 
+        # Y además: mensaje del oráculo
+        st.subheader("🔮 Mensaje del Oráculo")
+        st.info(random.choice(oracles))
+
     else:
-        st.warning('Por favor dibuja en el canvas un número o un doodle.')
+        st.warning('Por favor dibuja algo en el canvas antes de presionar el botón.')
+
+# Sidebar
+st.sidebar.title("Acerca del Oráculo 🎨")
+st.sidebar.text("Este no es un simple reconocedor de dígitos.")
+st.sidebar.text("Es un oráculo que interpreta tu dibujo,")
+st.sidebar.text("te da un dato curioso, y un mensaje inspirador.")
