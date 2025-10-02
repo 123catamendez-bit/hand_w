@@ -1,11 +1,11 @@
 import tensorflow as tf
 from PIL import Image, ImageOps
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 import random
+import cv2
 
 # Datos curiosos por número
 fun_facts = {
@@ -21,7 +21,6 @@ fun_facts = {
     9: "El 9 es el último número antes de que empiece una nueva decena: el final de un ciclo."
 }
 
-# Posibles interpretaciones creativas
 creative_meanings = {
     0: ["¿Dibujaste un huevito? 🥚", "Eso parece un anillo misterioso 💍"],
     1: ["Me recuerda a una vela encendida 🕯️", "Eso se parece a un lápiz solitario ✏️"],
@@ -35,25 +34,53 @@ creative_meanings = {
     9: ["Parece un globo escapando 🎈", "O un signo misterioso al revés 🔄"],
 }
 
-# Modelo
+# --- PREPROCESAMIENTO MEJORADO ---
+def preprocess_image(image):
+    # Escala de grises
+    img = image.convert("L")
+    
+    # Convertir a numpy
+    img = np.array(img)
+
+    # Invertir (para que sea blanco sobre negro como MNIST)
+    img = 255 - img
+
+    # Binarizar
+    _, img = cv2.threshold(img, 50, 255, cv2.THRESH_BINARY)
+
+    # Encontrar contornos y recortar el área del dígito
+    coords = cv2.findNonZero(img)
+    x, y, w, h = cv2.boundingRect(coords)
+    img_crop = img[y:y+h, x:x+w]
+
+    # Redimensionar manteniendo proporción a 20x20
+    aspect_ratio = max(w, h)
+    img_resized = cv2.resize(img_crop, (20, 20), interpolation=cv2.INTER_AREA)
+
+    # Colocar en un lienzo 28x28 y centrar
+    canvas = np.zeros((28, 28), dtype=np.uint8)
+    x_offset = (28 - img_resized.shape[1]) // 2
+    y_offset = (28 - img_resized.shape[0]) // 2
+    canvas[y_offset:y_offset+img_resized.shape[0], x_offset:x_offset+img_resized.shape[1]] = img_resized
+
+    # Normalizar
+    canvas = canvas.astype("float32") / 255.0
+
+    return canvas.reshape(1, 28, 28, 1)
+
+# --- PREDICCIÓN ---
 def predictDigit(image):
     model = tf.keras.models.load_model("model/handwritten.h5")
-    image = ImageOps.grayscale(image)
-    img = image.resize((28,28))
-    img = np.array(img, dtype='float32')
-    img = img/255
-    img = img.reshape((1,28,28,1))
-    pred= model.predict(img)
+    img = preprocess_image(image)
+    pred = model.predict(img)
     result = np.argmax(pred[0])
     return result
 
-# Streamlit 
+# --- STREAMLIT ---
 st.set_page_config(page_title='Oráculo de los Números ✨', layout='wide')
 st.title('🔮 Oráculo de los Números: ¿Qué dibujaste realmente?')
 st.subheader("Dibuja un dígito en el panel y descubre qué significa...")
 
-# Canvas
-drawing_mode = "freedraw"
 stroke_width = st.slider('Selecciona el ancho de línea', 1, 30, 15)
 stroke_color = '#FFFFFF'
 bg_color = '#000000'
@@ -68,14 +95,12 @@ canvas_result = st_canvas(
     key="canvas",
 )
 
-# Botón
 if st.button('✨ Revelar'):
     if canvas_result.image_data is not None:
         input_numpy_array = np.array(canvas_result.image_data)
         input_image = Image.fromarray(input_numpy_array.astype('uint8'),'RGBA')
-        input_image.save('prediction/img.png')
-        img = Image.open("prediction/img.png")
-        res = predictDigit(img)
+        input_image = input_image.convert("RGB")  # Asegurar canal correcto
+        res = predictDigit(input_image)
         
         st.header(f'🔢 El dígito es: **{res}**')
         st.write("📖 Dato curioso:", fun_facts[res])
@@ -83,7 +108,6 @@ if st.button('✨ Revelar'):
     else:
         st.warning('Por favor dibuja en el canvas un número antes de presionar el botón.')
 
-# Sidebar
 st.sidebar.title("Acerca de:")
 st.sidebar.text("Esta app no solo reconoce dígitos,")
 st.sidebar.text("¡también los interpreta con un toque creativo!")
