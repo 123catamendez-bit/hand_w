@@ -42,7 +42,7 @@ oracles = [
     "🌟 Hay creatividad en ti esperando salir, no la escondas.",
 ]
 
-# --- Preprocesamiento sin cv2 ---
+# --- Preprocesamiento ---
 def preprocess_image(image):
     img = image.convert("L")  # escala de grises
     img = ImageOps.invert(img)  # invertir
@@ -62,67 +62,22 @@ def predictDigit(image):
 # --- Streamlit ---
 st.set_page_config(page_title='Oráculo Creativo 🎨🔮', layout='wide')
 st.title('🎨 Oráculo Creativo: descubre qué significa tu dibujo')
-
 st.write("👉 Dibuja un número o cualquier cosa, y el oráculo te dirá lo que ve.")
 
-stroke_width = st.slider('Selecciona el ancho de línea', 1, 30, 15)
-stroke_color = '#FFFFFF'
-bg_color = '#000000'
-
-canvas_result = st_canvas(
-    fill_color="rgba(255, 165, 0, 0.3)",  
-    stroke_width=stroke_width,
-    stroke_color=stroke_color,
-    background_color=bg_color,
-    height=200,
-    width=200,
-    key="canvas",
-)
-
-if st.button('✨ Revelar'):
-    if canvas_result.image_data is not None:
-        input_numpy_array = np.array(canvas_result.image_data)
-        input_image = Image.fromarray(input_numpy_array.astype('uint8'),'RGBA').convert("RGB")
-
-        res, conf = predictDigit(input_image)
-
-        # Si el modelo está seguro del número
-        if conf > 0.70:
-            st.success(f"🔢 El oráculo ve el número **{res}** (confianza: {conf*100:.1f}%)")
-            st.write("📖 Dato curioso:", fun_facts[res])
-        else:
-            st.warning("🤔 El oráculo no está seguro que sea un número...")
-
-        # Siempre: interpretación creativa
-        st.subheader("🎨 Interpretación artística")
-        st.write(f"Esto podría ser {random.choice(creative_drawings)}")
-
-        # Y además: mensaje del oráculo
-        st.subheader("🔮 Mensaje del Oráculo")
-        st.info(random.choice(oracles))
-
-    else:
-        st.warning('Por favor dibuja algo en el canvas antes de presionar el botón.')
-
-# Barra lateral personalizada
+# --- Barra lateral ---
 st.sidebar.title("🎨 Explorador Creativo")
 st.sidebar.markdown("Aquí puedes interactuar con tu dibujo y explorar datos curiosos.")
 
-# Opción de modo de dibujo
 modo = st.sidebar.radio(
     "Elige un modo de exploración:",
     ["🔢 Reconocer Dígitos", "🎭 Interpretar como Dibujo", "🎲 Dato Curioso"]
 )
 
-# Opción para cambiar colores del lienzo
 st.sidebar.subheader("🖌️ Personaliza tu lienzo")
 stroke_color = st.sidebar.color_picker("Selecciona el color del lápiz", "#FFFFFF")
 bg_color = st.sidebar.color_picker("Selecciona el color de fondo", "#000000")
-
-# Slider divertido para el trazo
 stroke_width = st.sidebar.slider("✏️ Grosor del lápiz", 1, 30, 15)
 
-# Un dato curioso random
 if modo == "🎲 Dato Curioso":
     curiosidades = [
         "El número cero fue inventado en la India hace más de 1500 años.",
@@ -131,11 +86,43 @@ if modo == "🎲 Dato Curioso":
         "El 7 es el número más popular en el mundo según encuestas.",
         "El 3 aparece en muchísimos símbolos religiosos y culturales."
     ]
-    import random
     st.sidebar.info("💡 " + random.choice(curiosidades))
 
-# Créditos pero con estilo
 st.sidebar.markdown("👩‍💻 Desarrollado con ❤️ por *Catalina*")
 
+# --- Canvas que ahora sí usa los colores dinámicos ---
+canvas_result = st_canvas(
+    fill_color="rgba(255, 165, 0, 0.3)",  
+    stroke_width=stroke_width,
+    stroke_color=stroke_color,
+    background_color=bg_color,
+    height=200,
+    width=200,
+    drawing_mode="freedraw",
+    key="canvas",
+)
 
+# --- Lógica principal ---
+if st.button('✨ Revelar'):
+    if canvas_result.image_data is not None:
+        input_numpy_array = np.array(canvas_result.image_data)
+        input_image = Image.fromarray(input_numpy_array.astype('uint8'),'RGBA').convert("RGB")
 
+        res, conf = predictDigit(input_image)
+
+        # Si el modelo está seguro del número
+        if conf > 0.70 and modo == "🔢 Reconocer Dígitos":
+            st.success(f"🔢 El oráculo ve el número **{res}** (confianza: {conf*100:.1f}%)")
+            st.write("📖 Dato curioso:", fun_facts[res])
+        elif modo == "🎭 Interpretar como Dibujo":
+            st.subheader("🎨 Interpretación artística")
+            st.write(f"Esto podría ser {random.choice(creative_drawings)}")
+        else:
+            st.warning("🤔 El oráculo no está seguro que sea un número...")
+
+        # Mensaje del oráculo siempre
+        st.subheader("🔮 Mensaje del Oráculo")
+        st.info(random.choice(oracles))
+
+    else:
+        st.warning('Por favor dibuja algo en el canvas antes de presionar el botón.')
