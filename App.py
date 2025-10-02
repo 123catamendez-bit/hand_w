@@ -104,8 +104,38 @@ if st.button('✨ Revelar'):
     else:
         st.warning('Por favor dibuja algo en el canvas antes de presionar el botón.')
 
-# Sidebar
-st.sidebar.title("Acerca del Oráculo 🎨")
-st.sidebar.text("Este no es un simple reconocedor de dígitos.")
-st.sidebar.text("Es un oráculo que interpreta tu dibujo,")
-st.sidebar.text("te da un dato curioso, y un mensaje inspirador.")
+# Barra lateral personalizada
+st.sidebar.title("🎨 Explorador Creativo")
+st.sidebar.markdown("Aquí puedes interactuar con tu dibujo y explorar datos curiosos.")
+
+# Opción de modo de dibujo
+modo = st.sidebar.radio(
+    "Elige un modo de exploración:",
+    ["🔢 Reconocer Dígitos", "🎭 Interpretar como Dibujo", "🎲 Dato Curioso"]
+)
+
+# Opción para cambiar colores del lienzo
+st.sidebar.subheader("🖌️ Personaliza tu lienzo")
+stroke_color = st.sidebar.color_picker("Selecciona el color del lápiz", "#FFFFFF")
+bg_color = st.sidebar.color_picker("Selecciona el color de fondo", "#000000")
+
+# Slider divertido para el trazo
+stroke_width = st.sidebar.slider("✏️ Grosor del lápiz", 1, 30, 15)
+
+# Un dato curioso random
+if modo == "🎲 Dato Curioso":
+    curiosidades = [
+        "El número cero fue inventado en la India hace más de 1500 años.",
+        "El 8 acostado es el símbolo del infinito ∞.",
+        "En Japón, el 4 se considera un número de mala suerte.",
+        "El 7 es el número más popular en el mundo según encuestas.",
+        "El 3 aparece en muchísimos símbolos religiosos y culturales."
+    ]
+    import random
+    st.sidebar.info("💡 " + random.choice(curiosidades))
+
+# Créditos pero con estilo
+st.sidebar.markdown("👩‍💻 Desarrollado con ❤️ por *Catalina*")
+
+
+
